@@ -1,3 +1,6 @@
+using Books.DataContext;
+using Microsoft.EntityFrameworkCore;
+
 namespace Books
 {
     public class Program
@@ -15,6 +18,11 @@ namespace Books
             // with Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            // Configure PostgreSQL
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            builder.Services.AddDbContext<BooksContext>(options =>
+                options.UseNpgsql(connectionString));
 
             // Build the WebApplication instance
             var app = builder.Build();
