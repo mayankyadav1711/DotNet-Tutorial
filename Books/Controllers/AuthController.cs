@@ -12,16 +12,17 @@ namespace Books.Controllers
     [ApiController]
     public class AuthController : Controller
     {
-        private readonly IConfiguration _config;
-        private readonly BooksContext _context;
+        private readonly IConfiguration _config;  //Injected configuration object (issuer,audience and key) for accessing application settings.
+        private readonly BooksContext _context; // Injected database context for interacting with the data store.
 
+        //passing both of them in the below constructor
         public AuthController(IConfiguration config, BooksContext context)
         {
             _config = config;
             _context = context;
         }
 
-        [AllowAnonymous]
+        [AllowAnonymous] //attribute allow anonymous user to access this action
         [HttpPost("login")]
         public IActionResult Login([FromBody] UserLogin userLogin)
         {
@@ -29,7 +30,7 @@ namespace Books.Controllers
 
             if (user != null)
             {
-                var token = Generate(user);
+                var token = Generate(user); //generates the JWT token
                 return Ok(new { Message = "Welcome " + user.GivenName, Token = token });
             }
 
@@ -51,11 +52,29 @@ namespace Books.Controllers
             return Ok("User registered successfully");
         }
 
+        [HttpGet("users")]
+        public IActionResult GetUsers()
+        {
+            // Using LINQ to query the Users table
+            var users = _context.Users
+                .Select(u => new
+                {
+                    Username = u.Username,
+                    Email = u.EmailAddress,
+                    FullName = $"{u.GivenName} {u.Surname}"
+                })
+                .ToList();
+
+            return Ok(users);
+        }
+
+
         private string Generate(User user)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
+            // information about the users 
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Username),
@@ -65,8 +84,8 @@ namespace Books.Controllers
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
-            var token = new JwtSecurityToken(_config["Jwt:Issuer"],
-              _config["Jwt:Audience"],
+            var token = new JwtSecurityToken(_config["Jwt:Issuer"],  // who issued the token (Our Server)
+              _config["Jwt:Audience"], // who the token is intended for (Client) 
               claims,
               expires: DateTime.Now.AddMinutes(15),
               signingCredentials: credentials);
