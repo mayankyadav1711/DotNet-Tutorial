@@ -13,5 +13,6 @@ namespace Books.DataContext
 
         //DbSet is a class representing collection of entities. (here Book)
         public DbSet<Book> Books { get; set; }
+        public DbSet<User> Users { get; set; }
     }
 }
