@@ -1,9 +1,11 @@
 ﻿using Books.DataContext;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Books.Controllers
@@ -12,17 +14,16 @@ namespace Books.Controllers
     [ApiController]
     public class AuthController : Controller
     {
-        private readonly IConfiguration _config;  //Injected configuration object (issuer,audience and key) for accessing application settings.
-        private readonly BooksContext _context; // Injected database context for interacting with the data store.
+        private readonly IConfiguration _config;
+        private readonly BooksContext _context;
 
-        //passing both of them in the below constructor
         public AuthController(IConfiguration config, BooksContext context)
         {
             _config = config;
             _context = context;
         }
 
-        [AllowAnonymous] //attribute allow anonymous user to access this action
+        [AllowAnonymous]
         [HttpPost("login")]
         public IActionResult Login([FromBody] UserLogin userLogin)
         {
@@ -30,8 +31,8 @@ namespace Books.Controllers
 
             if (user != null)
             {
-                var token = Generate(user); //generates the JWT token
-                return Ok(new { Message = "Welcome " + user.GivenName, Token = token });
+                var token = Generate(user);
+                return Ok(new { Message = "Welcome " + user.FirstName, Token = token });
             }
 
             return NotFound("User not found");
@@ -39,63 +40,156 @@ namespace Books.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] User user)
+        public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
         {
-            var existingUser = _context.Users.FirstOrDefault(u => u.Username.ToLower() == user.Username.ToLower());
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var existingUser = _context.Users.FirstOrDefault(u => u.EmailAddress.ToLower() == model.EmailAddress.ToLower());
+
             if (existingUser != null)
             {
-                return BadRequest("Username already exists");
+                return BadRequest("Email address already exists");
             }
+
+            var user = new User
+            {
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                PhoneNumber = model.PhoneNumber,
+                EmailAddress = model.EmailAddress,
+                UserType = model.UserType,
+                Password = model.Password,
+                UserFullName = $"{model.FirstName} {model.LastName}"
+            };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+
             return Ok("User registered successfully");
         }
 
         [HttpGet("users")]
         public IActionResult GetUsers()
         {
-            // Using LINQ to query the Users table
             var users = _context.Users
                 .Select(u => new
                 {
-                    Username = u.Username,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
                     Email = u.EmailAddress,
-                    FullName = $"{u.GivenName} {u.Surname}"
+                    UserType = u.UserType
                 })
                 .ToList();
 
             return Ok(users);
         }
 
+        [AllowAnonymous]
+        [HttpPost("forgot-password")]
+        public IActionResult ForgotPassword([FromBody] ForgotPassword forgotPassword)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.EmailAddress == forgotPassword.EmailAddress);
+
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            // Generate a reset token and update the ForgotPassword table
+            var resetToken = GenerateResetToken();
+            _context.ForgotPasswords.Add(new ForgotPassword
+            {
+                Id = resetToken,
+                UserId = user.Id,
+                RequestDateTime = DateTime.UtcNow
+            });
+            _context.SaveChanges();
+
+            // Send the reset token to the user's email address
+            // ...
+
+            return Ok("Password reset link has been sent to your email address.");
+        }
+
+        [AllowAnonymous]
+        [HttpPost("reset-password")]
+        public IActionResult ResetPassword([FromBody] ResetPassword resetPassword)
+        {
+            var forgotPassword = _context.ForgotPasswords.FirstOrDefault(fp => fp.Id == resetPassword.ResetToken);
+
+            if (forgotPassword == null)
+            {
+                return NotFound("Invalid reset token");
+            }
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == forgotPassword.UserId);
+
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            // Update the user's password
+            user.Password = resetPassword.NewPassword;
+            _context.Users.Update(user);
+            _context.SaveChanges();
+
+            // Remove the reset token from the ForgotPassword table
+            _context.ForgotPasswords.Remove(forgotPassword);
+            _context.SaveChanges();
+
+            return Ok("Password reset successful");
+        }
+
+        [HttpPost("change-password")]
+        public IActionResult ChangePassword([FromBody] ChangePassword changePassword)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Id == changePassword.UserId);
+
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            // Verify the old password
+            if (user.Password != changePassword.OldPassword)
+            {
+                return BadRequest("Invalid old password");
+            }
+
+            // Update the user's password
+            user.Password = changePassword.NewPassword;
+            _context.Users.Update(user);
+            _context.SaveChanges();
+
+            return Ok("Password changed successfully");
+        }
 
         private string Generate(User user)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            // information about the users 
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Username),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.EmailAddress),
-                new Claim(ClaimTypes.GivenName, user.GivenName),
-                new Claim(ClaimTypes.Surname, user.Surname),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.GivenName, user.FirstName),
+                new Claim(ClaimTypes.Surname, user.LastName),
+                new Claim(ClaimTypes.Role, user.UserType)
             };
 
-            var token = new JwtSecurityToken(_config["Jwt:Issuer"],  // who issued the token (Our Server)
-              _config["Jwt:Audience"], // who the token is intended for (Client) 
-              claims,
-              expires: DateTime.Now.AddMinutes(15),
-              signingCredentials: credentials);
+            var token = new JwtSecurityToken(_config["Jwt:Issuer"], _config["Jwt:Audience"], claims, expires: DateTime.Now.AddMinutes(15), signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         private User Authenticate(UserLogin userLogin)
         {
-            var currentUser = _context.Users.FirstOrDefault(o => o.Username.ToLower() == userLogin.Username.ToLower() && o.Password == userLogin.Password);
+            var currentUser = _context.Users.FirstOrDefault(u => u.EmailAddress.ToLower() == userLogin.EmailAddress.ToLower() && u.Password == userLogin.Password);
 
             if (currentUser != null)
             {
@@ -103,6 +197,17 @@ namespace Books.Controllers
             }
 
             return null;
+        }
+
+        private string GenerateResetToken()
+        {
+            // Generate a random token for password reset
+            using (var randomNumberGenerator = RandomNumberGenerator.Create())
+            {
+                var resetToken = new byte[32];
+                randomNumberGenerator.GetBytes(resetToken);
+                return Convert.ToBase64String(resetToken);
+            }
         }
     }
 }
