@@ -32,7 +32,7 @@ namespace Books.Controllers
             if (user != null)
             {
                 var token = Generate(user);
-                return Ok(new { Message = "Welcome " + user.FirstName, Token = token });
+                return Ok(new { Message = "Login Successfully", Token = token });
             }
 
             return NotFound("User not found");
@@ -175,12 +175,15 @@ namespace Books.Controllers
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.EmailAddress),
-                new Claim(ClaimTypes.GivenName, user.FirstName),
-                new Claim(ClaimTypes.Surname, user.LastName),
-                new Claim(ClaimTypes.Role, user.UserType)
-            };
+        new Claim("userId", user.Id.ToString()),
+        new Claim("fullName", user.UserFullName),
+        new Claim("firstName", user.FirstName),
+        new Claim("lastName", user.LastName),
+        new Claim("phoneNumber", user.PhoneNumber),
+        new Claim("emailAddress", user.EmailAddress),
+        new Claim("userType", user.UserType),
+        new Claim("userImage", user.UserImage)
+    };
 
             var token = new JwtSecurityToken(_config["Jwt:Issuer"], _config["Jwt:Audience"], claims, expires: DateTime.Now.AddMinutes(15), signingCredentials: credentials);
 
