@@ -18,6 +18,7 @@ namespace Books.DataContext
         public DbSet<UserDetail> UserDetails { get; set; }
 
         public DbSet<MissionSkill> MissionSkills { get; set; }
+        public DbSet<MissionTheme> MissionThemes { get; set; }
 
     }
 }
