@@ -139,7 +139,172 @@ namespace Books.Controllers
         {
             return _context.UserDetails.Any(e => e.Id == id);
         }
+
+        [HttpPost("registerUser")]
+        public async Task<IActionResult> RegisterUser([FromBody] RegisterViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var user = new User
+            {
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                PhoneNumber = model.PhoneNumber,
+                EmailAddress = model.EmailAddress,
+                UserType = model.UserType,
+                Password = model.Password,
+                UserFullName = $"{model.FirstName} {model.LastName}"
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            // Perform the operation on the client side
+            var userDetails = await _context.UserDetails.ToListAsync();
+            int maxEmployeeId = userDetails
+                .Where(ud => ud.EmployeeId.Length > 0)
+                .Select(ud => int.Parse(ud.EmployeeId.Substring(3)))
+                .DefaultIfEmpty(0)
+                .Max();
+
+            // After creating the User record, you can create a UserDetail record
+            var userDetail = new UserDetail
+            {
+                UserId = user.Id,
+                Name = user.FirstName,
+                Surname = user.LastName,
+                EmployeeId = $"EMP{(maxEmployeeId + 1):000}",
+                Manager = "Sample Manager",
+                Title = string.Empty,
+                Department = "IT Department ",
+                MyProfile = string.Empty,
+                WhyIVolunteer = string.Empty,
+                CountryId = 0,
+                CityId = 0,
+                Availability = string.Empty,
+                LinkdInUrl = string.Empty,
+                MySkills = string.Empty,
+                UserImage = string.Empty,
+                Status = true
+            };
+
+            _context.UserDetails.Add(userDetail);
+            await _context.SaveChangesAsync();
+
+            // Return a custom response object
+            return Ok(new { Message = "User registered successfully" });
+        }
+
+        [HttpGet("getUserById/{id}")]
+        public async Task<IActionResult> GetUserById(int id)
+        {
+            var user = await _context.Users
+                                     .Include(u => u.UserDetails)
+                                     .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
+            var userDetails = user.UserDetails.FirstOrDefault();
+
+            var result = new
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
+                EmailAddress = user.EmailAddress,
+                UserType = user.UserType,
+                Password = user.Password,
+                ConfirmPassword = user.Password, // assuming you want to return the same password for both fields
+                UserDetails = new
+                {
+                    userDetails.Name,
+                    userDetails.Surname,
+                    userDetails.EmployeeId,
+                    userDetails.Manager,
+                    userDetails.Title,
+                    userDetails.Department,
+                    userDetails.MyProfile,
+                    userDetails.WhyIVolunteer,
+                    userDetails.CountryId,
+                    userDetails.CityId,
+                    userDetails.Availability,
+                    userDetails.LinkdInUrl,
+                    userDetails.MySkills,
+                    userDetails.UserImage,
+                    userDetails.Status
+                }
+            };
+
+            return Ok(new { result });
+        }
+
+
+        [HttpPut("updateUser")]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var user = await _context.Users.FindAsync(model.Id);
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
+            user.FirstName = model.FirstName;
+            user.LastName = model.LastName;
+            user.PhoneNumber = model.PhoneNumber;
+            user.EmailAddress = model.EmailAddress;
+            user.Password = model.Password;
+            user.UserFullName = $"{model.FirstName} {model.LastName}";
+            user.UserType = "user";
+
+            _context.Users.Update(user);
+
+            var userDetail = await _context.UserDetails.SingleOrDefaultAsync(ud => ud.UserId == user.Id);
+            if (userDetail != null)
+            {
+                userDetail.Name = user.FirstName;
+                userDetail.Surname = user.LastName;
+                userDetail.EmployeeId = userDetail.EmployeeId;
+                userDetail.Manager = userDetail.Manager;
+                userDetail.Title = userDetail.Title;
+                userDetail.Department = userDetail.Department;
+                userDetail.MyProfile = userDetail.MyProfile;
+                userDetail.WhyIVolunteer = userDetail.WhyIVolunteer;
+                userDetail.CountryId = userDetail.CountryId;
+                userDetail.CityId = userDetail.CityId;
+                userDetail.Availability = userDetail.Availability;
+                userDetail.LinkdInUrl = userDetail.LinkdInUrl;
+                userDetail.MySkills = userDetail.MySkills;
+                userDetail.UserImage = userDetail.UserImage;
+                userDetail.Status = userDetail.Status;
+
+                _context.UserDetails.Update(userDetail);
+            }
+            else
+            {
+                return NotFound(new { Message = "User details not found" });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "User updated successfully" });
+        }
+
+
+
     }
+
 
     public class UserDetailDto
     {

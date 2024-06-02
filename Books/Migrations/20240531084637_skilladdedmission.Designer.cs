@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Books.Migrations
 {
     [DbContext(typeof(BooksContext))]
-    [Migration("20240528083720_new")]
-    partial class @new
+    [Migration("20240531084637_skilladdedmission")]
+    partial class skilladdedmission
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -48,6 +48,27 @@ namespace Books.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Books");
+                });
+
+            modelBuilder.Entity("Books.MissionSkill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("SkillName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MissionSkills");
                 });
 
             modelBuilder.Entity("ForgotPassword", b =>
@@ -112,6 +133,81 @@ namespace Books.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("UserDetail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Availability")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("CityId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CountryId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EmployeeId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LinkdInUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Manager")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MyProfile")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MySkills")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Status")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserImage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("WhyIVolunteer")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserDetails");
+                });
+
             modelBuilder.Entity("ForgotPassword", b =>
                 {
                     b.HasOne("User", "User")
@@ -123,9 +219,22 @@ namespace Books.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("UserDetail", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany("UserDetails")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("User", b =>
                 {
                     b.Navigation("ForgotPasswords");
+
+                    b.Navigation("UserDetails");
                 });
 #pragma warning restore 612, 618
         }

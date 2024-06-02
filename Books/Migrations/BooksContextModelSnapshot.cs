@@ -47,6 +47,27 @@ namespace Books.Migrations
                     b.ToTable("Books");
                 });
 
+            modelBuilder.Entity("Books.MissionSkill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("SkillName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MissionSkills");
+                });
+
             modelBuilder.Entity("ForgotPassword", b =>
                 {
                     b.Property<string>("Id")

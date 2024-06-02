@@ -17,5 +17,7 @@ namespace Books.DataContext
         public DbSet<ForgotPassword> ForgotPasswords { get; set; }
         public DbSet<UserDetail> UserDetails { get; set; }
 
+        public DbSet<MissionSkill> MissionSkills { get; set; }
+
     }
 }
