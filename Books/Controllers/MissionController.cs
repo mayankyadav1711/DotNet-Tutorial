@@ -93,7 +93,7 @@ namespace Books.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Mission>> PostMission(MissionDto missionDto)
+        public async Task<ActionResult<Mission>> PostMission([FromBody] MissionDto missionDto)
         {
             Mission mission = new Mission
             {
@@ -105,7 +105,7 @@ namespace Books.Controllers
                 EndDate = missionDto.EndDate,
                 MissionImages = missionDto.MissionImages,
                 MissionSkillId = missionDto.MissionSkillId,
-                MissionTitle = "Default Mission Title", // Set a default value for MissionTitle
+                MissionTitle = missionDto.MissionTitle, // Set a default value for MissionTitle
                 MissionOrganisationName = null, // Set to null or provide a default value
                 MissionOrganisationDetail = null, // Set to null or provide a default value
                 MissionType = null, // Set to null or provide a default value
@@ -129,14 +129,15 @@ namespace Books.Controllers
             var mission = await _context.Missions.FindAsync(id);
             if (mission == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Mission not found" });
             }
 
             _context.Missions.Remove(mission);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new { message = "Mission successfully deleted" });
         }
+
 
         private bool MissionExists(int id)
         {
@@ -153,8 +154,14 @@ namespace Books.Controllers
         public int? TotalSheets { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
-        public string? MissionImages { get; set; }
+        public string? MissionImages { get; set; } // Ensure this is a string
         public string? MissionSkillId { get; set; }
-        // Add other fields as needed
+        public string? MissionThemeId { get; set; } // Changed to string to match your frontend
+        public string MissionTitle { get; set; }
+        public string? MissionOrganisationName { get; set; }
+        public string? MissionOrganisationDetail { get; set; }
+        public string? CountryName { get; set; }
+        public string? CityName { get; set; }
     }
+
 }
