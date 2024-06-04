@@ -38,8 +38,6 @@ namespace Books.Controllers
 
             return mission;
         }
-
-        // PUT: api/Missions/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutMission(int id, MissionDto missionDto)
         {
@@ -54,6 +52,7 @@ namespace Books.Controllers
                 return NotFound();
             }
 
+            // Update only the properties present in the DTO
             mission.CountryId = missionDto.CountryId;
             mission.CityId = missionDto.CityId;
             mission.MissionDescription = missionDto.MissionDescription;
@@ -62,6 +61,15 @@ namespace Books.Controllers
             mission.EndDate = missionDto.EndDate;
             mission.MissionImages = missionDto.MissionImages;
             mission.MissionSkillId = missionDto.MissionSkillId;
+            mission.MissionTitle = mission.MissionTitle ?? "Default Mission Title"; // Set a default value if null
+            mission.MissionOrganisationName = mission.MissionOrganisationName; // Leave as is
+            mission.MissionOrganisationDetail = mission.MissionOrganisationDetail; // Leave as is
+            mission.MissionType = mission.MissionType; // Leave as is
+            mission.RegistrationDeadLine = mission.RegistrationDeadLine; // Leave as is
+            mission.MissionThemeId = mission.MissionThemeId ?? "Default Theme"; // Set a default value if null
+            mission.MissionDocuments = mission.MissionDocuments; // Leave as is
+            mission.MissionAvilability = mission.MissionAvilability; // Leave as is
+            mission.MissionVideoUrl = mission.MissionVideoUrl; // Leave as is
 
             _context.Entry(mission).State = EntityState.Modified;
 
@@ -84,7 +92,6 @@ namespace Books.Controllers
             return NoContent();
         }
 
-        // POST: api/Missions
         [HttpPost]
         public async Task<ActionResult<Mission>> PostMission(MissionDto missionDto)
         {
@@ -97,7 +104,16 @@ namespace Books.Controllers
                 StartDate = missionDto.StartDate,
                 EndDate = missionDto.EndDate,
                 MissionImages = missionDto.MissionImages,
-                MissionSkillId = missionDto.MissionSkillId
+                MissionSkillId = missionDto.MissionSkillId,
+                MissionTitle = "Default Mission Title", // Set a default value for MissionTitle
+                MissionOrganisationName = null, // Set to null or provide a default value
+                MissionOrganisationDetail = null, // Set to null or provide a default value
+                MissionType = null, // Set to null or provide a default value
+                RegistrationDeadLine = null, // Set to null or provide a default value
+                MissionThemeId = "Default Theme", // Set a default value or provide a better value
+                MissionDocuments = null, // Set to null or provide a default value
+                MissionAvilability = null, // Set to null or provide a default value
+                MissionVideoUrl = null // Set to null or provide a default value
             };
 
             _context.Missions.Add(mission);
