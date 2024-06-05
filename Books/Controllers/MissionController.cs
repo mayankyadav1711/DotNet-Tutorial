@@ -110,7 +110,7 @@ namespace Books.Controllers
                 MissionOrganisationDetail = null, // Set to null or provide a default value
                 MissionType = null, // Set to null or provide a default value
                 RegistrationDeadLine = null, // Set to null or provide a default value
-                MissionThemeId = "Default Theme", // Set a default value or provide a better value
+                MissionThemeId = missionDto.MissionSkillId, // Set a default value or provide a better value
                 MissionDocuments = null, // Set to null or provide a default value
                 MissionAvilability = null, // Set to null or provide a default value
                 MissionVideoUrl = null // Set to null or provide a default value
