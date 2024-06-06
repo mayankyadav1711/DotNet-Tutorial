@@ -22,6 +22,8 @@ namespace Books.DataContext
         public DbSet<Mission> Missions { get; set; }
         public DbSet<Country> Countries { get; set; }
         public DbSet<City> Cities { get; set; }
+        public DbSet<MissionApplication> MissionApplications { get; set; } // Added this line for MissionApplication
+
 
     }
 }
