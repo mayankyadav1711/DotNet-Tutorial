@@ -28,7 +28,10 @@ namespace Books.Controllers
             try
             {
                 clientSideMissionList = await _context.Missions
-                    .Select(m => new ClientMissionDto
+                     .Include(m => m.Country)
+            .Include(m => m.City)
+            .Select(m => new ClientMissionDto
+                
                     {
                         Id = m.Id,
                         MissionTitle = m.MissionTitle,
